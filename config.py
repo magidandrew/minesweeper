@@ -1,4 +1,3 @@
-import pygame as pg
 SCREENX = 364
 SCREENY = 497
 
@@ -10,8 +9,9 @@ FONT_SIZE = 30
 MINE_INDEX = 0
 HINT_INDEX = 1
 
-FLAG = 1
-CLICK = 0
+ROWS = 16
+COLS = 30
+MINE_NUM = 2
 
 # COLOR TUPLES
 GREY = (185, 185, 185)
@@ -26,5 +26,5 @@ DARK_RED = (181, 48, 35)
 MAROON = (115, 20, 12)
 TEAL = (55, 126, 126)
 
-# number2color table
+# color lookup
 NUMBER2COLOR = {'0': WHITE, '1': BLUE, '2': GREEN, '3': RED, '4': DARK_BLUE, '5': MAROON, '6': TEAL, '7': BLACK, '8': DARK_GREY}

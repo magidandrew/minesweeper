@@ -1,5 +1,5 @@
 import pygame as pg
-import config_globals as gb
+import config as cf
 
 
 def draw_guides(sf: pg.Surface, rows: int, cols: int):
@@ -11,7 +11,9 @@ def draw_guides(sf: pg.Surface, rows: int, cols: int):
     x_pos = x_delta
     y_pos = y_delta
     for _ in range(rows - 1):
-        pg.draw.line(sf, gb.DARK_GREY, (0, y_pos), (x_length, y_pos))
-        pg.draw.line(sf, gb.DARK_GREY, (x_pos, 0), (x_pos, y_length))
-        x_pos += x_delta
+        pg.draw.line(sf, cf.DARK_GREY, (0, y_pos), (x_length, y_pos))
         y_pos += y_delta
+
+    for _ in range(cols - 1):
+        pg.draw.line(sf, cf.DARK_GREY, (x_pos, 0), (x_pos, y_length))
+        x_pos += x_delta

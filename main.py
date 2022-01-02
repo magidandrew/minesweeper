@@ -1,5 +1,5 @@
 import pygame as pg
-import config_globals as gb
+import config as cf
 from random import random
 from pathlib import Path
 import pygame_menu as pgm
@@ -16,14 +16,14 @@ dead_icon = pg.image.load(Path("assets/dead.png"))
 app_icon = pg.image.load(Path("assets/icon.png"))
 
 pg.font.init()
-font = pg.font.SysFont("Courier", gb.FONT_SIZE, bold=True)
+font = pg.font.SysFont("Courier", cf.FONT_SIZE, bold=True)
 font_width, font_height = font.size("1")
 
 pg.init()
 pg.display.set_caption("Minesweeper")
 pg.display.set_icon(app_icon)
 
-screen = pg.display.set_mode((gb.SCREENX, gb.SCREENY), pg.RESIZABLE)
+screen = pg.display.set_mode((cf.SCREENX, cf.SCREENY), pg.RESIZABLE)
 
 
 def print_mat(mat: list[list[int]]):
@@ -112,13 +112,12 @@ def blit_hints_to_surface(fs: pg.Surface, font: pg.font.Font, hint_mat: list[lis
     x_delta = int(fs.get_size()[0] / cols)
     y_delta = int(fs.get_size()[1] / rows)
     y_pos = int((y_delta - font_height) / 2)
-    # y_pos = 0
 
     for x in range(rows):
         x_pos = int((x_delta - font_width) / 2)
         for y in range(cols):
             if 0 <= hint_mat[x][y] <= 8:
-                fs.blit(font.render(str(hint_mat[x][y]), False, gb.NUMBER2COLOR[str(hint_mat[x][y])]),
+                fs.blit(font.render(str(hint_mat[x][y]), False, cf.NUMBER2COLOR[str(hint_mat[x][y])]),
                         (x_pos, y_pos, x_delta, y_delta))
             elif hint_mat[x][y] < 0:
                 fs.blit(pg.transform.scale(bomb_icon, (font_width, font_height)),
@@ -150,70 +149,63 @@ def create_blit_buttons_to_surface(fs: pg.Surface, rows: int, cols: int):
     x_delta = int(fs.get_size()[0] / cols)
     y_delta = int(fs.get_size()[1] / rows)
     y_pos = 0
-
     buttons = []
-    # pressed_indices = [i[0] for i in pressed]
+
     for x in range(rows):
         x_pos = 0
         for y in range(cols):
-            # extract index
             btn = fs.blit(pg.transform.scale(btn_icon, (x_delta, y_delta)), (x_pos, y_pos, x_delta, y_delta))
             buttons.append(Button(rect=btn))
-            # FIXME: THIS IS UNGODLY. NEED SOME STATE CLASSES TO CLEAN THIS UP.
-            # elif btn_index in pressed_indices and pressed[[i for i, (v,*_) in enumerate(pressed) if v == btn_index][0]][1] == gb.FLAG:
-            #     btn = fs.blit(pg.transform.scale(flag_icon, (x_delta, y_delta)), (x_pos, y_pos, x_delta, y_delta))
-            #     buttons.append(btn)
             x_pos += x_delta
         y_pos += y_delta
     return buttons
 
+def calculate_screen_dimensions():
+    pass
 
 def main():
-    x_offset = int(gb.SCREENX * 0.05)
-    y_offset_top = int(gb.SCREENY * 0.2)
-    y_offset_bottom = int(gb.SCREENY * 0.03)
+    x_offset = int(cf.SCREENX * 0.05)
+    y_offset_top = int(cf.SCREENY * 0.2)
+    y_offset_bottom = int(cf.SCREENY * 0.03)
     y_offset_score = int(1.5 * y_offset_bottom)
-
-    pressed = []
-    buttons = []
 
     # clear screen
     screen.fill((0, 0, 0, 0))
 
     # create surface the same size as playing area
     # SRCALPHA for background transparency
-    field_surface = pg.Surface((gb.SCREENX - 2 * x_offset - 2 * gb.LINE_WIDTH,
-                                gb.SCREENY - y_offset_top - y_offset_bottom - 2 * gb.LINE_WIDTH), pg.SRCALPHA)
-    field_surface.fill(gb.GREY)
-    buttons_surface = pg.Surface((gb.SCREENX - 2 * x_offset - 2 * gb.LINE_WIDTH,
-                                  gb.SCREENY - y_offset_top - y_offset_bottom - 2 * gb.LINE_WIDTH), pg.SRCALPHA)
+    field_surface = pg.Surface((cf.SCREENX - 2 * x_offset - 2 * cf.LINE_WIDTH,
+                                cf.SCREENY - y_offset_top - y_offset_bottom - 2 * cf.LINE_WIDTH), pg.SRCALPHA)
+    field_surface.fill(cf.GREY)
+    buttons_surface = pg.Surface((cf.SCREENX - 2 * x_offset - 2 * cf.LINE_WIDTH,
+                                  cf.SCREENY - y_offset_top - y_offset_bottom - 2 * cf.LINE_WIDTH), pg.SRCALPHA)
 
-    field = create_field(8, 8)
+    field = create_field(cf.ROWS, cf.COLS, cf.MINE_NUM)
 
-    blit_hints_to_surface(field_surface, font, field[gb.HINT_INDEX])
-    buttons = create_blit_buttons_to_surface(buttons_surface, 8, 8)
+    blit_hints_to_surface(field_surface, font, field[cf.HINT_INDEX])
+    buttons = create_blit_buttons_to_surface(buttons_surface, cf.ROWS, cf.COLS)
 
     def redraw_screen():
-        nonlocal buttons
-        # screen.fill(gb.GREY)
+        # nonlocal buttons
+        # screen.fill(cf.GREY)
         # draw outside border
-        pg.draw.rect(screen, gb.WHITE, (0, 0, gb.SCREENX, gb.SCREENY), gb.LINE_WIDTH, 1)
+        pg.draw.rect(screen, cf.WHITE, (0, 0, cf.SCREENX, cf.SCREENY), cf.LINE_WIDTH, 1)
         # draw playing area
-        pg.draw.rect(screen, gb.DARK_GREY, (x_offset, y_offset_top, gb.SCREENX - 2 * x_offset,
-                                            gb.SCREENY - y_offset_top - y_offset_bottom), gb.LINE_WIDTH, 1)
+        pg.draw.rect(screen, cf.DARK_GREY, (x_offset, y_offset_top, cf.SCREENX - 2 * x_offset,
+                                            cf.SCREENY - y_offset_top - y_offset_bottom), cf.LINE_WIDTH, 1)
 
         # draw score area
-        pg.draw.rect(screen, gb.DARK_GREY, (x_offset, y_offset_bottom, gb.SCREENX - 2 * x_offset,
-                                            y_offset_top - y_offset_score), gb.LINE_WIDTH, 1)
+        pg.draw.rect(screen, cf.DARK_GREY, (x_offset, y_offset_bottom, cf.SCREENX - 2 * x_offset,
+                                            y_offset_top - y_offset_score), cf.LINE_WIDTH, 1)
 
-        drw.draw_guides(field_surface, 8, 8)
+        drw.draw_guides(field_surface, cf.ROWS, cf.COLS)
 
         # reset buttons_surface
         buttons_surface.fill((0, 0, 0, 0))
-        update_blit_buttons_to_surface(buttons_surface, 8, 8, buttons)
+        update_blit_buttons_to_surface(buttons_surface, cf.ROWS, cf.COLS, buttons)
 
-        screen.blit(field_surface, (x_offset + gb.LINE_WIDTH, y_offset_top + gb.LINE_WIDTH))
-        screen.blit(buttons_surface, (x_offset + gb.LINE_WIDTH, y_offset_top + gb.LINE_WIDTH))
+        screen.blit(field_surface, (x_offset + cf.LINE_WIDTH, y_offset_top + cf.LINE_WIDTH))
+        screen.blit(buttons_surface, (x_offset + cf.LINE_WIDTH, y_offset_top + cf.LINE_WIDTH))
         pg.display.update()
 
     redraw_screen()
@@ -229,9 +221,7 @@ def main():
                     running = False
 
             if event.type == pg.MOUSEBUTTONDOWN:
-                mouse_pos = event.pos
-                # TODO: fix mouse offset without magic numbers
-                mouse_pos = (mouse_pos[0] - 23, mouse_pos[1] - 101)
+                mouse_pos = (event.pos[0] - x_offset - cf.LINE_WIDTH, event.pos[1] - y_offset_top - cf.LINE_WIDTH)
                 for btn in buttons:
                     if btn is not None:
                         if btn.rect.collidepoint(mouse_pos):
@@ -243,9 +233,18 @@ def main():
                             redraw_screen()
 
 
+def change_difficulty(*args):
+    # dont ask me how this works
+    cf.ROWS = args[0][0][1][0]
+    cf.COLS = args[0][0][1][1]
+    cf.MINE_NUM = args[0][0][1][2]
+
+
 def init_and_menu():
-    menu = pgm.Menu("MINESW33PER", gb.SCREENX, gb.SCREENY, theme=pgm.themes.THEME_DARK)
-    menu.add.selector("Difficulty: ", [("Rookie", 1), ("Apprentice", 2), ("Bomb Tech", 3)])
+    menu = pgm.Menu("MINESW33PER", cf.SCREENX, cf.SCREENY, theme=pgm.themes.THEME_DARK)
+    menu.add.selector("Difficulty: ",
+                      [("Rookie", (9, 9, 10)), ("Apprentice", (16, 16, 40)), ("Bomb Tech", (16, 30, 99))],
+                      onchange=change_difficulty)
     menu.add.button("Play", main)
     menu.add.button("Quit", pgm.events.EXIT)
     menu.add.label("\nESC to main menu")
@@ -254,4 +253,6 @@ def init_and_menu():
 
 if __name__ == "__main__":
     # init_and_menu()
-    main()
+    # main()
+    hint_mat = create_field(8,8)[1]
+    print_mat(hint_mat)
