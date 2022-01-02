@@ -4,7 +4,7 @@ from random import random
 from pathlib import Path
 import pygame_menu as pgm
 import sys
-from button import Button
+from button import Button, reveal_empty_contiguous_boxes
 import draw as drw
 
 bomb_icon = pg.image.load(Path("assets/bomb.png"))
@@ -155,7 +155,7 @@ def create_blit_buttons_to_surface(fs: pg.Surface, rows: int, cols: int):
         x_pos = 0
         for y in range(cols):
             btn = fs.blit(pg.transform.scale(btn_icon, (x_delta, y_delta)), (x_pos, y_pos, x_delta, y_delta))
-            buttons.append(Button(rect=btn))
+            buttons.append(Button(x, y, rect=btn))
             x_pos += x_delta
         y_pos += y_delta
     return buttons
@@ -228,13 +228,16 @@ def main():
                             if event.button == pg.BUTTON_LEFT:
                                 if not btn.flagged:
                                     btn.revealed = True
+                                    # set all non-revealed
+                                    for idx in reveal_empty_contiguous_boxes(field[cf.HINT_INDEX], btn.x, btn.y):
+                                        buttons[idx[0] * cf.COLS + idx[1]].revealed = True
                             elif event.button == pg.BUTTON_RIGHT:
                                 btn.flagged = not btn.flagged
                             redraw_screen()
 
 
 def change_difficulty(*args):
-    # dont ask me how this works
+    # don't ask me how this works ... specifics of the library implementation
     cf.ROWS = args[0][0][1][0]
     cf.COLS = args[0][0][1][1]
     cf.MINE_NUM = args[0][0][1][2]
@@ -243,7 +246,7 @@ def change_difficulty(*args):
 def init_and_menu():
     menu = pgm.Menu("MINESW33PER", cf.SCREENX, cf.SCREENY, theme=pgm.themes.THEME_DARK)
     menu.add.selector("Difficulty: ",
-                      [("Rookie", (9, 9, 10)), ("Apprentice", (16, 16, 40)), ("Bomb Tech", (16, 30, 99))],
+                      [("Rookie", (cf.ROWS, cf.COLS, cf.MINE_NUM)), ("Apprentice", (16, 16, 40)), ("Bomb Tech", (16, 30, 99))],
                       onchange=change_difficulty)
     menu.add.button("Play", main)
     menu.add.button("Quit", pgm.events.EXIT)
@@ -252,7 +255,7 @@ def init_and_menu():
 
 
 if __name__ == "__main__":
-    # init_and_menu()
+    init_and_menu()
     # main()
     hint_mat = create_field(8,8)[1]
     print_mat(hint_mat)
