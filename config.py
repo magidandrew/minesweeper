@@ -1,4 +1,11 @@
-SCREENX = 364
+import pygame as pg
+from pathlib import Path
+
+face_icon = pg.image.load(Path("assets/face.png"))
+dead_icon = pg.image.load(Path("assets/dead.png"))
+win_icon = pg.image.load(Path("assets/win.png"))
+
+SCREENX = 377
 SCREENY = 497
 
 LINE_WIDTH = 4
@@ -11,9 +18,10 @@ HINT_INDEX = 1
 
 ROWS = 9
 COLS = 9
-MINE_NUM = 10
+DEFAULT_MINE_NUM = 10
+MINE_PROB = .2
 
-# COLOR TUPLES
+# RGB COLOR TUPLES
 GREY = (185, 185, 185)
 DARK_GREY = (128, 128, 128)
 BLACK = (0, 0, 0)
@@ -26,5 +34,6 @@ DARK_RED = (181, 48, 35)
 MAROON = (115, 20, 12)
 TEAL = (55, 126, 126)
 
-# color lookup
-NUMBER2COLOR = {'0': WHITE, '1': BLUE, '2': GREEN, '3': RED, '4': DARK_BLUE, '5': MAROON, '6': TEAL, '7': BLACK, '8': DARK_GREY}
+# COLOR LOOKUP
+NUMBER2COLOR = {'0': WHITE, '1': BLUE, '2': GREEN, '3': RED, '4': DARK_BLUE, '5': MAROON, '6': TEAL, '7': BLACK,
+                '8': DARK_GREY}

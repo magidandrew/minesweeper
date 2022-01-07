@@ -1,29 +1,31 @@
 import pygame as pg
 import config as cf
-from random import random
+from random import sample
 from pathlib import Path
 import pygame_menu as pgm
 import sys
-from button import Button, reveal_empty_contiguous_boxes
+from button import Button, reveal_empty_contiguous_boxes, reveal_bombs
 import draw as drw
+from state import State
 
+# TODO: put all initialization stuff in a separate function
 bomb_icon = pg.image.load(Path("assets/bomb.png"))
+detonated_icon = pg.image.load(Path("assets/detonated.png"))
 btn_icon = pg.image.load(Path("assets/button.png"))
 flag_icon = pg.image.load(Path("assets/flag.png"))
-face_icon = pg.image.load(Path("assets/face.png"))
-cool_icon = pg.image.load(Path("assets/cool.png"))
-dead_icon = pg.image.load(Path("assets/dead.png"))
 app_icon = pg.image.load(Path("assets/icon.png"))
 
 pg.font.init()
 font = pg.font.SysFont("Courier", cf.FONT_SIZE, bold=True)
-font_width, font_height = font.size("1")
+font_width, font_height = font.size("1")  # courier is monospaced --> can take size of any char
 
 pg.init()
 pg.display.set_caption("Minesweeper")
 pg.display.set_icon(app_icon)
 
-screen = pg.display.set_mode((cf.SCREENX, cf.SCREENY), pg.RESIZABLE)
+screen = pg.display.set_mode((cf.SCREENX, cf.SCREENY))
+
+gs = State()
 
 
 def print_mat(mat: list[list[int]]):
@@ -31,40 +33,13 @@ def print_mat(mat: list[list[int]]):
         print(i)
 
 
-def create_hint_mat(mine_mat: list[list[int]]) -> list[list[int]]:
-    def isbomb_at(x: int, y: int) -> int:
-        if x < 0 or y < 0:
-            return 0
-        try:
-            return 1 if mine_mat[x][y] != 0 else 0
-        except IndexError:
-            return 0
-
-    rows = len(mine_mat)
-    cols = len(mine_mat[0])
-    hints = [[0] * cols for _ in range(rows)]
-    for x in range(rows):
-        for y in range(cols):
-            hints[x][y] += isbomb_at(x - 1, y - 1)  # Top Left
-            hints[x][y] += isbomb_at(x, y - 1)  # Top Middle
-            hints[x][y] += isbomb_at(x + 1, y - 1)  # Top Right
-            hints[x][y] += isbomb_at(x - 1, y)  # Left
-            hints[x][y] += isbomb_at(x + 1, y)  # Right
-            hints[x][y] += isbomb_at(x - 1, y + 1)  # Lower Left
-            hints[x][y] += isbomb_at(x, y + 1)  # Lower Middle
-            hints[x][y] += isbomb_at(x + 1, y + 1)  # Lower Right
-    return hints
-
-
-def create_field(x: int, y: int, mine_num: int = 10, mine_prob: float = .2) -> tuple[
-    list[list[int]], list[list[int]]]:
+def create_field(x: int, y: int, mine_num: int = cf.DEFAULT_MINE_NUM, mine_prob: float = cf.MINE_PROB) -> tuple[
+        list[list[int]], list[list[int]]]:
     mines = [[0] * y for _ in range(x)]
     hints = [[0] * y for _ in range(x)]
-    count = 0
 
     # pass in bomb location and try to
     def inc_hint(bomb_x: int, bomb_y: int):
-
         def try_add(hint_x: int, hint_y: int):
             try:
                 # prevent negative indexing
@@ -77,25 +52,20 @@ def create_field(x: int, y: int, mine_num: int = 10, mine_prob: float = .2) -> t
             except IndexError:
                 pass
 
-        try_add(bomb_x - 1, bomb_y - 1)  # Top Left
-        try_add(bomb_x, bomb_y - 1)  # Top Middle
-        try_add(bomb_x + 1, bomb_y - 1)  # Top Right
-        try_add(bomb_x - 1, bomb_y)  # Left
-        try_add(bomb_x + 1, bomb_y)  # Right
-        try_add(bomb_x - 1, bomb_y + 1)  # Lower Left
-        try_add(bomb_x, bomb_y + 1)  # Lower Middle
-        try_add(bomb_x + 1, bomb_y + 1)  # Lower Right
+        neighbors = [(bomb_x - 1, bomb_y - 1), (bomb_x, bomb_y - 1), (bomb_x + 1, bomb_y - 1), (bomb_x - 1, bomb_y),
+                     (bomb_x + 1, bomb_y), (bomb_x - 1, bomb_y + 1), (bomb_x, bomb_y + 1), (bomb_x + 1, bomb_y + 1)]
+        for neighbor in neighbors:
+            try_add(neighbor[0], neighbor[1])
 
-    while count < mine_num:
-        for row in range(x):
-            for col in range(y):
-                if count == mine_num:
-                    break
-                if random() <= mine_prob and mines[row][col] == 0:
-                    # mine added
-                    mines[row][col] = 1
-                    inc_hint(row, col)
-                    count += 1
+    # hack to get from 1D index to 2D index
+    def to_2d(idx: int) -> tuple[int, int]:
+        return idx // y, idx % y
+
+    for idx in sample([x for x in range(x*y)], mine_num):
+        row, col = to_2d(idx)
+        if not mines[row][col]:
+            mines[row][col] = 1
+            inc_hint(row, col)
 
     for row in range(x):
         for col in range(y):
@@ -109,33 +79,39 @@ def blit_hints_to_surface(fs: pg.Surface, font: pg.font.Font, hint_mat: list[lis
     rows = len(hint_mat)
     cols = len(hint_mat[0])
 
-    x_delta = int(fs.get_size()[0] / cols)
-    y_delta = int(fs.get_size()[1] / rows)
-    y_pos = int((y_delta - font_height) / 2)
+    x_delta = fs.get_size()[0] // cols
+    y_delta = fs.get_size()[1] // rows
+    y_pos = (y_delta - font_height) // 2
+    y_mine_pos = 0
 
     for x in range(rows):
-        x_pos = int((x_delta - font_width) / 2)
+        x_pos = (x_delta - font_width) // 2
+        x_mine_pos = 0
         for y in range(cols):
-            if 0 <= hint_mat[x][y] <= 8:
+            if 0 < hint_mat[x][y] <= 8:
                 fs.blit(font.render(str(hint_mat[x][y]), False, cf.NUMBER2COLOR[str(hint_mat[x][y])]),
                         (x_pos, y_pos, x_delta, y_delta))
             elif hint_mat[x][y] < 0:
-                fs.blit(pg.transform.scale(bomb_icon, (font_width, font_height)),
-                        (x_pos, y_pos, x_delta, y_delta))
+                fs.blit(pg.transform.scale(bomb_icon, (x_delta, y_delta)),
+                        (x_mine_pos, y_mine_pos, x_delta, y_delta))
             x_pos += x_delta
+            x_mine_pos += x_delta
         y_pos += y_delta
+        y_mine_pos += y_delta
 
 
 def update_blit_buttons_to_surface(fs: pg.Surface, rows: int, cols: int, buttons):
-    x_delta = int(fs.get_size()[0] / cols)
-    y_delta = int(fs.get_size()[1] / rows)
+    x_delta = fs.get_size()[0] // cols
+    y_delta = fs.get_size()[1] // rows
     y_pos = 0
 
     for x in range(rows):
         x_pos = 0
         for y in range(cols):
             idx = x * cols + y
-            if buttons[idx].revealed:
+            if buttons[idx].detonated:
+                fs.blit(pg.transform.scale(detonated_icon, (x_delta, y_delta)), (x_pos, y_pos, x_delta, y_delta))
+            elif buttons[idx].revealed:
                 pass
             elif buttons[idx].flagged:
                 fs.blit(pg.transform.scale(flag_icon, (x_delta, y_delta)), (x_pos, y_pos, x_delta, y_delta))
@@ -146,8 +122,8 @@ def update_blit_buttons_to_surface(fs: pg.Surface, rows: int, cols: int, buttons
 
 
 def create_blit_buttons_to_surface(fs: pg.Surface, rows: int, cols: int):
-    x_delta = int(fs.get_size()[0] / cols)
-    y_delta = int(fs.get_size()[1] / rows)
+    x_delta = fs.get_size()[0] // cols
+    y_delta = fs.get_size()[1] // rows
     y_pos = 0
     buttons = []
 
@@ -160,12 +136,11 @@ def create_blit_buttons_to_surface(fs: pg.Surface, rows: int, cols: int):
         y_pos += y_delta
     return buttons
 
-def calculate_screen_dimensions():
-    pass
 
 def main():
-    x_offset = int(cf.SCREENX * 0.05)
-    y_offset_top = int(cf.SCREENY * 0.2)
+    gs.reset_state()
+    x_offset = int(cf.SCREENX * 0.05)  # this rounds down to 18
+    y_offset_top = int(cf.SCREENY * 0.196)  # this rounds down to 97
     y_offset_bottom = int(cf.SCREENY * 0.03)
     y_offset_score = int(1.5 * y_offset_bottom)
 
@@ -180,14 +155,17 @@ def main():
     buttons_surface = pg.Surface((cf.SCREENX - 2 * x_offset - 2 * cf.LINE_WIDTH,
                                   cf.SCREENY - y_offset_top - y_offset_bottom - 2 * cf.LINE_WIDTH), pg.SRCALPHA)
 
-    field = create_field(cf.ROWS, cf.COLS, cf.MINE_NUM)
+    field = create_field(cf.ROWS, cf.COLS, cf.DEFAULT_MINE_NUM)
+
+    score_surface = pg.Surface((cf.SCREENX - 2 * x_offset - 2 * cf.LINE_WIDTH,
+                                y_offset_top - y_offset_score - 2 * cf.LINE_WIDTH), pg.SRCALPHA)
 
     blit_hints_to_surface(field_surface, font, field[cf.HINT_INDEX])
     buttons = create_blit_buttons_to_surface(buttons_surface, cf.ROWS, cf.COLS)
 
     def redraw_screen():
         # nonlocal buttons
-        # screen.fill(cf.GREY)
+        screen.fill(cf.GREY)
         # draw outside border
         pg.draw.rect(screen, cf.WHITE, (0, 0, cf.SCREENX, cf.SCREENY), cf.LINE_WIDTH, 1)
         # draw playing area
@@ -204,8 +182,11 @@ def main():
         buttons_surface.fill((0, 0, 0, 0))
         update_blit_buttons_to_surface(buttons_surface, cf.ROWS, cf.COLS, buttons)
 
+        gs.update_score_area(score_surface)
+
         screen.blit(field_surface, (x_offset + cf.LINE_WIDTH, y_offset_top + cf.LINE_WIDTH))
         screen.blit(buttons_surface, (x_offset + cf.LINE_WIDTH, y_offset_top + cf.LINE_WIDTH))
+        screen.blit(score_surface, (x_offset + cf.LINE_WIDTH, y_offset_bottom + cf.LINE_WIDTH))
         pg.display.update()
 
     redraw_screen()
@@ -221,32 +202,46 @@ def main():
                     running = False
 
             if event.type == pg.MOUSEBUTTONDOWN:
+                # check to see which surface you clicked on and set mousepos accordingly
                 mouse_pos = (event.pos[0] - x_offset - cf.LINE_WIDTH, event.pos[1] - y_offset_top - cf.LINE_WIDTH)
                 for btn in buttons:
                     if btn is not None:
                         if btn.rect.collidepoint(mouse_pos):
                             if event.button == pg.BUTTON_LEFT:
                                 if not btn.flagged:
-                                    btn.revealed = True
-                                    # set all non-revealed
-                                    for idx in reveal_empty_contiguous_boxes(field[cf.HINT_INDEX], btn.x, btn.y):
-                                        buttons[idx[0] * cf.COLS + idx[1]].revealed = True
-                            elif event.button == pg.BUTTON_RIGHT:
+                                    if field[cf.HINT_INDEX][btn.x][btn.y] == -1:
+                                        gs.dead = True
+                                        btn.detonated = True
+                                        for idx in reveal_bombs(field[cf.HINT_INDEX]):
+                                            buttons[idx[0] * cf.COLS + idx[1]].revealed = True
+                                    elif not gs.dead:
+                                        btn.revealed = True
+                                        # set all non-revealed
+                                        for idx in reveal_empty_contiguous_boxes(field[cf.HINT_INDEX], btn.x, btn.y):
+                                            buttons[idx[0] * cf.COLS + idx[1]].revealed = True
+                            elif event.button == pg.BUTTON_RIGHT and not gs.dead:
                                 btn.flagged = not btn.flagged
                             redraw_screen()
 
+                # check win
+                if cf.COLS * cf.ROWS - len([x for x in buttons if x.revealed]) == cf.DEFAULT_MINE_NUM:
+                    gs.won = True
+                    redraw_screen()
+
+
 
 def change_difficulty(*args):
-    # don't ask me how this works ... specifics of the library implementation
+    # don't ask me how this works ... specifics of pygame_menu lib implementation
     cf.ROWS = args[0][0][1][0]
     cf.COLS = args[0][0][1][1]
-    cf.MINE_NUM = args[0][0][1][2]
+    cf.DEFAULT_MINE_NUM = args[0][0][1][2]
 
 
 def init_and_menu():
     menu = pgm.Menu("MINESW33PER", cf.SCREENX, cf.SCREENY, theme=pgm.themes.THEME_DARK)
     menu.add.selector("Difficulty: ",
-                      [("Rookie", (cf.ROWS, cf.COLS, cf.MINE_NUM)), ("Apprentice", (16, 16, 40)), ("Bomb Tech", (16, 30, 99))],
+                      [("Rookie", (cf.ROWS, cf.COLS, cf.DEFAULT_MINE_NUM)), ("Apprentice", (16, 16, 40)),
+                       ("Bomb Tech", (16, 30, 99))],
                       onchange=change_difficulty)
     menu.add.button("Play", main)
     menu.add.button("Quit", pgm.events.EXIT)
@@ -257,5 +252,5 @@ def init_and_menu():
 if __name__ == "__main__":
     init_and_menu()
     # main()
-    hint_mat = create_field(8,8)[1]
+    hint_mat = create_field(8, 8)[1]
     print_mat(hint_mat)

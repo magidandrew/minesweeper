@@ -4,11 +4,19 @@ import pygame as pg
 class Button:
     def __init__(self, x: int, y: int, rect=None):
         self.revealed: bool = False
+        self.detonated: bool = False
         self.flagged: bool = False
         self.x = x
         self.y = y
         self.rect: pg.Rect = rect
 
+def reveal_bombs(hint_mat:list[list[int]]):
+    marked = []
+    for row in range(len(hint_mat)):
+        for col in range(len(hint_mat[0])):
+            if hint_mat[row][col] == -1:
+                marked.append((row, col))
+    return marked
 
 def reveal_empty_contiguous_boxes(hint_mat: list[list[int]], x: int, y: int):
     if not hint_mat[x][y] == 0:
@@ -45,6 +53,7 @@ def reveal_empty_contiguous_boxes(hint_mat: list[list[int]], x: int, y: int):
         for neighbor in neighbors:
             if neighbor in lateral_neighbors and iszero_at(neighbor[0], neighbor[1]):
                 update(neighbor[0], neighbor[1])
+            # reveal boxes contiguous to empties
             try:
                 if isvalid_at(neighbor[0], neighbor[1]) and neighbor not in marked:
                     marked.append(neighbor)
