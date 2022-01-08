@@ -25,7 +25,6 @@ pg.display.set_icon(app_icon)
 
 screen = pg.display.set_mode((cf.SCREENX, cf.SCREENY))
 
-gs = State()
 
 
 def print_mat(mat: list[list[int]]):
@@ -138,6 +137,7 @@ def create_blit_buttons_to_surface(fs: pg.Surface, rows: int, cols: int):
 
 
 def main():
+    gs = State()
     gs.reset_state()
     x_offset = int(cf.SCREENX * 0.05)  # this rounds down to 18
     y_offset_top = int(cf.SCREENY * 0.196)  # this rounds down to 97
@@ -202,6 +202,7 @@ def main():
                     running = False
 
             if event.type == pg.MOUSEBUTTONDOWN:
+                gs.start_game()
                 # check to see which surface you clicked on and set mousepos accordingly
                 mouse_pos = (event.pos[0] - x_offset - cf.LINE_WIDTH, event.pos[1] - y_offset_top - cf.LINE_WIDTH)
                 for btn in buttons:
@@ -209,8 +210,8 @@ def main():
                         if btn.rect.collidepoint(mouse_pos):
                             if event.button == pg.BUTTON_LEFT:
                                 if not btn.flagged:
-                                    if field[cf.HINT_INDEX][btn.x][btn.y] == -1:
-                                        gs.dead = True
+                                    if field[cf.HINT_INDEX][btn.x][btn.y] == -1 and not gs.dead:
+                                        gs.die()
                                         btn.detonated = True
                                         for idx in reveal_bombs(field[cf.HINT_INDEX]):
                                             buttons[idx[0] * cf.COLS + idx[1]].revealed = True
@@ -219,14 +220,23 @@ def main():
                                         # set all non-revealed
                                         for idx in reveal_empty_contiguous_boxes(field[cf.HINT_INDEX], btn.x, btn.y):
                                             buttons[idx[0] * cf.COLS + idx[1]].revealed = True
-                            elif event.button == pg.BUTTON_RIGHT and not gs.dead:
+                            elif event.button == pg.BUTTON_RIGHT and not gs.dead and not btn.revealed:
+                                if not btn.flagged and gs.flag_num >= gs.mine_num:
+                                    continue
                                 btn.flagged = not btn.flagged
-                            redraw_screen()
+                                if btn.flagged:  # we just incremented
+                                    gs.flag_num += 1
+                                else:  # we just decremented
+                                    gs.flag_num -= 1
+
+                            # redraw_screen()
 
                 # check win
                 if cf.COLS * cf.ROWS - len([x for x in buttons if x.revealed]) == cf.DEFAULT_MINE_NUM:
                     gs.won = True
-                    redraw_screen()
+                    gs.running = False
+                    # redraw_screen()
+        redraw_screen()
 
 
 

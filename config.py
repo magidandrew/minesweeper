@@ -5,6 +5,9 @@ face_icon = pg.image.load(Path("assets/face.png"))
 dead_icon = pg.image.load(Path("assets/dead.png"))
 win_icon = pg.image.load(Path("assets/win.png"))
 
+pathlist = Path("assets/numbers").rglob('*.png')
+ssd_numbers = [pg.image.load(x) for x in sorted(pathlist)]
+
 SCREENX = 377
 SCREENY = 497
 
