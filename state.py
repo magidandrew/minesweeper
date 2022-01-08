@@ -15,14 +15,15 @@ class State:
         self.running: bool = False
         self.start_time = 0
         self.end_time = 0
+        self.face_rect = None
 
     def update_score_area(self, score_surface: pg.Surface):
         border_offset: int = int(score_surface.get_height() * .25)
         face_size = score_surface.get_height() - border_offset
 
         def blit_face(icon: pg.image):
-            score_surface.blit(pg.transform.scale(icon, (face_size, face_size)),
-                               (score_surface.get_width() // 2 - face_size // 2, border_offset // 2))
+            self.face_rect = score_surface.blit(pg.transform.scale(icon, (face_size, face_size)),
+                                                (score_surface.get_width() // 2 - face_size // 2, border_offset // 2))
 
         if not self.won:
             blit_face(cf.face_icon)
@@ -58,7 +59,7 @@ class State:
         self.__init__()
 
     def start_game(self):
-        if self.running:
+        if self.running or self.won or self.dead:
             return
         self.running = True
         self.start_time = timer()
@@ -75,3 +76,9 @@ class State:
         self.dead = True
         self.running = False
         self.end_time = timer()
+
+    def win(self):
+        if not self.won:
+            self.running = False
+            self.won = True
+            self.end_time = timer()

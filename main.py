@@ -26,14 +26,13 @@ pg.display.set_icon(app_icon)
 screen = pg.display.set_mode((cf.SCREENX, cf.SCREENY))
 
 
-
 def print_mat(mat: list[list[int]]):
     for i in mat:
         print(i)
 
 
 def create_field(x: int, y: int, mine_num: int = cf.DEFAULT_MINE_NUM, mine_prob: float = cf.MINE_PROB) -> tuple[
-        list[list[int]], list[list[int]]]:
+    list[list[int]], list[list[int]]]:
     mines = [[0] * y for _ in range(x)]
     hints = [[0] * y for _ in range(x)]
 
@@ -60,7 +59,7 @@ def create_field(x: int, y: int, mine_num: int = cf.DEFAULT_MINE_NUM, mine_prob:
     def to_2d(idx: int) -> tuple[int, int]:
         return idx // y, idx % y
 
-    for idx in sample([x for x in range(x*y)], mine_num):
+    for idx in sample([x for x in range(x * y)], mine_num):
         row, col = to_2d(idx)
         if not mines[row][col]:
             mines[row][col] = 1
@@ -203,39 +202,41 @@ def main():
 
             if event.type == pg.MOUSEBUTTONDOWN:
                 gs.start_game()
-                # check to see which surface you clicked on and set mousepos accordingly
-                mouse_pos = (event.pos[0] - x_offset - cf.LINE_WIDTH, event.pos[1] - y_offset_top - cf.LINE_WIDTH)
-                for btn in buttons:
-                    if btn is not None:
-                        if btn.rect.collidepoint(mouse_pos):
-                            if event.button == pg.BUTTON_LEFT:
-                                if not btn.flagged:
-                                    if field[cf.HINT_INDEX][btn.x][btn.y] == -1 and not gs.dead:
-                                        gs.die()
-                                        btn.detonated = True
-                                        for idx in reveal_bombs(field[cf.HINT_INDEX]):
-                                            buttons[idx[0] * cf.COLS + idx[1]].revealed = True
-                                    elif not gs.dead:
-                                        btn.revealed = True
-                                        # set all non-revealed
-                                        for idx in reveal_empty_contiguous_boxes(field[cf.HINT_INDEX], btn.x, btn.y):
-                                            buttons[idx[0] * cf.COLS + idx[1]].revealed = True
-                            elif event.button == pg.BUTTON_RIGHT and not gs.dead and not btn.revealed:
-                                if not btn.flagged and gs.flag_num >= gs.mine_num:
-                                    continue
-                                btn.flagged = not btn.flagged
-                                if btn.flagged:  # we just incremented
-                                    gs.flag_num += 1
-                                else:  # we just decremented
-                                    gs.flag_num -= 1
-
-                            # redraw_screen()
-
+                # in score surface
+                mouse_pos_score = (event.pos[0] - x_offset - cf.LINE_WIDTH, event.pos[1] - y_offset_bottom - cf.LINE_WIDTH)
+                if score_surface.get_rect().collidepoint(mouse_pos_score[0], mouse_pos_score[1]):
+                    if gs.face_rect.collidepoint(mouse_pos_score[0], mouse_pos_score[1]):
+                        # FIXME: this recursion grows the stack unnecessarily
+                        main()
+                # in play surface
+                mouse_pos_play = (event.pos[0] - x_offset - cf.LINE_WIDTH, event.pos[1] - y_offset_top - cf.LINE_WIDTH)
+                if buttons_surface.get_rect().collidepoint(mouse_pos_play[0], mouse_pos_play[1]):
+                    for btn in buttons:
+                        if btn is not None:
+                            if btn.rect.collidepoint(mouse_pos_play):
+                                if event.button == pg.BUTTON_LEFT:
+                                    if not btn.flagged:
+                                        if field[cf.HINT_INDEX][btn.x][btn.y] == -1 and not gs.dead:
+                                            gs.die()
+                                            btn.detonated = True
+                                            for idx in reveal_bombs(field[cf.HINT_INDEX]):
+                                                buttons[idx[0] * cf.COLS + idx[1]].revealed = True
+                                        elif not gs.dead:
+                                            btn.revealed = True
+                                            # set all non-revealed
+                                            for idx in reveal_empty_contiguous_boxes(field[cf.HINT_INDEX], btn.x, btn.y):
+                                                buttons[idx[0] * cf.COLS + idx[1]].revealed = True
+                                elif event.button == pg.BUTTON_RIGHT and not gs.dead and not gs.won and not btn.revealed:
+                                    if not btn.flagged and gs.flag_num >= gs.mine_num:
+                                        continue
+                                    btn.flagged = not btn.flagged
+                                    if btn.flagged:  # we just incremented
+                                        gs.flag_num += 1
+                                    else:  # we just decremented
+                                        gs.flag_num -= 1
                 # check win
                 if cf.COLS * cf.ROWS - len([x for x in buttons if x.revealed]) == cf.DEFAULT_MINE_NUM:
-                    gs.won = True
-                    gs.running = False
-                    # redraw_screen()
+                    gs.win()
         redraw_screen()
 
 
@@ -261,6 +262,3 @@ def init_and_menu():
 
 if __name__ == "__main__":
     init_and_menu()
-    # main()
-    hint_mat = create_field(8, 8)[1]
-    print_mat(hint_mat)
