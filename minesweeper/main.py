@@ -53,7 +53,7 @@ def create_field(x: int, y: int, click_pos: tuple[int, int] = (0, 0), mine_num: 
 
     # hack to get from 2D index to 1D index
     def to_1d(idx: tuple[int, int]) -> int:
-        return idx[0] + idx[1] * x
+        return idx[0] * x + idx[1]
 
     sampled = [to_1d(click_pos)]
     while to_1d(click_pos) in sampled:
@@ -220,6 +220,7 @@ def main(*args):
 
                 if event.type == pg.MOUSEBUTTONDOWN:
                     gs.start_game()
+
                     # in score surface
                     mouse_pos_score = (
                         event.pos[0] - x_offset - cf.LINE_WIDTH, event.pos[1] - y_offset_bottom - cf.LINE_WIDTH)

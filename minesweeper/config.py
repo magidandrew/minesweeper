@@ -9,6 +9,7 @@ detonated_icon = pg.image.load(Path("assets/detonated.png"))
 btn_icon = pg.image.load(Path("assets/button.png"))
 flag_icon = pg.image.load(Path("assets/flag.png"))
 app_icon = pg.image.load(Path("assets/icon.png"))
+depressed_icon = pg.image.load(Path("assets/pressed.png"))
 
 pathlist = Path("assets/numbers").rglob('*.png')
 ssd_numbers = [pg.image.load(x) for x in sorted(pathlist)]
