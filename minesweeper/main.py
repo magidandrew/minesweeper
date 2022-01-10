@@ -262,8 +262,7 @@ def main(*args):
                                         else:  # we just decremented
                                             gs.flag_num -= 1
                     # check win
-                    if cf.DIM[cf.X] * cf.DIM[cf.Y] - len([x for x in buttons if x.revealed]) == gs.mine_num and \
-                            gs.flag_num == gs.mine_num:
+                    if cf.DIM[cf.X] * cf.DIM[cf.Y] - len([x for x in buttons if x.revealed]) == gs.mine_num:
                         gs.win()
             redraw_screen()
         gs.reset_state()
