@@ -18,7 +18,7 @@ def reveal_bombs(hint_mat:list[list[int]]):
                 marked.append((row, col))
     return marked
 
-def reveal_empty_contiguous_boxes(hint_mat: list[list[int]], x: int, y: int):
+def reveal_empty_contiguous_boxes(hint_mat: list[list[int]], x: int, y: int, buttons):
     if not hint_mat[x][y] == 0:
         return []
 
@@ -60,4 +60,8 @@ def reveal_empty_contiguous_boxes(hint_mat: list[list[int]], x: int, y: int):
             except IndexError:
                 pass
 
+    # do not remove the flags
+    for btn in buttons:
+        if btn.flagged and (btn.x, btn.y) in marked:
+            marked.remove((btn.x, btn.y))
     return marked

@@ -82,3 +82,6 @@ class State:
             self.running = False
             self.won = True
             self.end_time = timer()
+
+    def terminated_state(self):
+        return self.won or self.dead

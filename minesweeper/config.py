@@ -4,23 +4,33 @@ from pathlib import Path
 face_icon = pg.image.load(Path("assets/face.png"))
 dead_icon = pg.image.load(Path("assets/dead.png"))
 win_icon = pg.image.load(Path("assets/win.png"))
+bomb_icon = pg.image.load(Path("assets/bomb.png"))
+detonated_icon = pg.image.load(Path("assets/detonated.png"))
+btn_icon = pg.image.load(Path("assets/button.png"))
+flag_icon = pg.image.load(Path("assets/flag.png"))
+app_icon = pg.image.load(Path("assets/icon.png"))
 
 pathlist = Path("assets/numbers").rglob('*.png')
 ssd_numbers = [pg.image.load(x) for x in sorted(pathlist)]
 
-SCREENX = 377
-SCREENY = 497
+DEFAULT_SCREENX = 377
+DEFAULT_SCREENY = 497
+
+RESOLUTIONS = {(9, 9): (377, 497), (16, 16): (452, 650), (16, 30): (842, 650)}
+FONT_SIZES = {(9, 9): 30, (16, 16): 23, (16, 30): 23}
 
 LINE_WIDTH = 4
-THIN_LINE_WIDTH = int(LINE_WIDTH / 2)
+THIN_LINE_WIDTH = LINE_WIDTH // 2
 
-FONT_SIZE = 30
-
+# INDICES
 MINE_INDEX = 0
 HINT_INDEX = 1
+X = 0
+Y = 1
 
 ROWS = 9
 COLS = 9
+DIM = (ROWS, COLS)
 DEFAULT_MINE_NUM = 10
 MINE_PROB = .2
 
