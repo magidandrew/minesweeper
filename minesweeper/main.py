@@ -53,7 +53,7 @@ def create_field(x: int, y: int, click_pos: tuple[int, int] = (0, 0), mine_num: 
 
     # hack to get from 2D index to 1D index
     def to_1d(idx: tuple[int, int]) -> int:
-        return idx[0] * x + idx[1]
+        return idx[0] * y + idx[1]
 
     sampled = [to_1d(click_pos)]
     while to_1d(click_pos) in sampled:
