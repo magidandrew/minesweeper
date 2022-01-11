@@ -3,7 +3,7 @@
 Re-making of the original Minesweeper game that was bundled with Windows.
 
 ### How To Run (Easy)
-`.app` binaries can be downloaded from the releases page.
+`.app` binaries can be downloaded from the [releases](https://github.com/magidandrew/minesweeper/releases/tag/v1.0.0) page.
 
 ### Run From Source
 `pip` is required.
