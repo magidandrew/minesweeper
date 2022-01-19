@@ -3,7 +3,7 @@
 Re-making of the original Minesweeper game that was bundled with Windows.
 
 ### Screenshot
-![demo](demo.png)
+![demo](demo.png){ width=50%, height=50% }
 
 ### How To Run (Easy)
 `.app` binaries can be downloaded from the [releases](https://github.com/magidandrew/minesweeper/releases/) page.
